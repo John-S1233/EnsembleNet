@@ -13,16 +13,16 @@ The architecture of EnsembleNet consists of several components:
 
 1. **Data Input**: The CIFAR-100 dataset is used as the primary dataset for training and evaluation.
 2. **Model Generation**: Multiple models are generated based on different architecture types:
-   - **Transformer
-   - **Convolutional Neural Network (CNN)
-   - **Densely Connected Convolutional Network (DenseNet)
-   -Inception
-   -MobileNet
-   -Liquid Neural Network (LNN)
-   -Attention Convolutional Neural Network
-   -Recurrent Neural Network (RNN)
-   -Hybrid Network - combines convolutional layers with recurrent layers
-   -Generative Adversarial Network (GAN
+   - Transformer
+   - Convolutional Neural Network (CNN)
+   - Densely Connected Convolutional Network (DenseNet)
+   - Inception
+   - MobileNet
+   - Liquid Neural Network (LNN)
+   - Attention Convolutional Neural Network
+   - Recurrent Neural Network (RNN)
+   - Hybrid Network - combines convolutional layers with recurrent layers
+   - Generative Adversarial Network (GAN
    
    
 4. **Meta Learner**: A meta-learner is trained to combine the outputs of the generated models, producing a final prediction.
