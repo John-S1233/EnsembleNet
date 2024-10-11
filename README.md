@@ -17,7 +17,8 @@ The architecture of EnsembleNet consists of several components:
 
 Below is a diagram representing the EnsembleNet pipeline:
 
-![Ensemble](https://github.com/user-attachments/assets/92d7aa82-dda6-4735-ae74-d05a62fc2be6)
+![Ensemble](https://github.com/user-attachments/assets/ffd1edf8-6b7d-401c-af2a-08a672886b25)
+
 
 ## Dataset: CIFAR-100
 
