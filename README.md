@@ -25,7 +25,7 @@ The architecture of EnsembleNet consists of several components:
    - Generative Adversarial Network (GAN
    
    
-4. **Meta Learner**: A meta-learner is trained to combine the outputs of the generated models, producing a final prediction.
+4. **Meta Learner**: A meta-learner is trained to combine the outputs of the generated models and their architectures, producing a final prediction.
 
 Below is a diagram representing the EnsembleNet pipeline:
 
