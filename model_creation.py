@@ -2,6 +2,7 @@ import random
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
+from tensorflow.keras.optimizers import Adam
 
 # Random hyperparameter function
 def random_choice(param_list):
@@ -14,45 +15,70 @@ def serialize_architecture(arch_type, params):
 
 # -------------------- Model Creation Functions -------------------- #
 
-def create_meta_learner(predictions_shape, hyperparams_shape, x_val_shape):
-    """Create and compile the meta-learner model using the Functional API."""
-    # Define inputs
-    predictions_input = layers.Input(shape=predictions_shape, name='predictions_input')  # Shape: (100 * num_models,)
-    hyperparams_input = layers.Input(shape=hyperparams_shape, name='hyperparams_input')  # Encoded hyperparameters
-    x_val_input = layers.Input(shape=x_val_shape, name='x_val_input')  # Shape: (32*32*3,)
+def create_multibranch_meta_learner(predictions_shape, hyperparams_dim, image_shape, num_classes=100):
+    """
+    Creates a multibranch meta-learner model.
 
-    # Process predictions
-    x1 = layers.Dense(128, activation='relu')(predictions_input)
-    x1 = layers.BatchNormalization()(x1)
-    x1 = layers.Dropout(0.3)(x1)
+    Args:
+        predictions_shape (tuple): Shape of the concatenated sub-model predictions (e.g., (500,)).
+        hyperparams_dim (int): Dimensionality of the encoded hyperparameters vector.
+        image_shape (tuple): Shape of the CIFAR-100 image data (e.g., (32, 32, 3)).
+        num_classes (int): Number of output classes (default is 100 for CIFAR-100).
 
-    # Process hyperparameters
-    x2 = layers.Dense(64, activation='relu')(hyperparams_input)
-    x2 = layers.BatchNormalization()(x2)
-    x2 = layers.Dropout(0.3)(x2)
+    Returns:
+        keras.Model: Compiled multibranch meta-learner model.
+    """
+    # -------------------- Sub-Model Predictions Branch -------------------- #
+    predictions_input = layers.Input(shape=predictions_shape, name='predictions_input')
+    x_pred = layers.Dense(256, activation='relu')(predictions_input)
+    x_pred = layers.BatchNormalization()(x_pred)
+    x_pred = layers.Dropout(0.5)(x_pred)
+    x_pred = layers.Dense(128, activation='relu')(x_pred)
+    x_pred = layers.BatchNormalization()(x_pred)
+    x_pred = layers.Dropout(0.5)(x_pred)
 
-    # Process x_val data
-    x3 = layers.Dense(128, activation='relu')(x_val_input)
-    x3 = layers.BatchNormalization()(x3)
-    x3 = layers.Dropout(0.3)(x3)
+    # -------------------- Hyperparameters Branch -------------------- #
+    hyperparams_input = layers.Input(shape=(hyperparams_dim,), name='hyperparams_input')
+    x_hyper = layers.Dense(128, activation='relu')(hyperparams_input)
+    x_hyper = layers.BatchNormalization()(x_hyper)
+    x_hyper = layers.Dropout(0.5)(x_hyper)
+    x_hyper = layers.Dense(64, activation='relu')(x_hyper)
+    x_hyper = layers.BatchNormalization()(x_hyper)
+    x_hyper = layers.Dropout(0.5)(x_hyper)
 
-    # Concatenate processed inputs
-    concatenated = layers.concatenate([x1, x2, x3])
+    # -------------------- CIFAR-100 Images Branch -------------------- #
+    images_input = layers.Input(shape=image_shape, name='images_input')
+    x_img = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(images_input)
+    x_img = layers.BatchNormalization()(x_img)
+    x_img = layers.MaxPooling2D((2, 2))(x_img)
+    x_img = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x_img)
+    x_img = layers.BatchNormalization()(x_img)
+    x_img = layers.MaxPooling2D((2, 2))(x_img)
+    x_img = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x_img)
+    x_img = layers.BatchNormalization()(x_img)
+    x_img = layers.GlobalAveragePooling2D()(x_img)
+    x_img = layers.Dense(128, activation='relu')(x_img)
+    x_img = layers.BatchNormalization()(x_img)
+    x_img = layers.Dropout(0.5)(x_img)
 
-    # Further processing
-    x = layers.Dense(64, activation='relu')(concatenated)
+    # -------------------- Concatenation and Fusion -------------------- #
+    concatenated = layers.concatenate([x_pred, x_hyper, x_img], name='concatenated_features')
+    x = layers.Dense(256, activation='relu')(concatenated)
     x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.3)(x)
+    x = layers.Dropout(0.5)(x)
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dropout(0.5)(x)
 
-    # Output layer
-    output = layers.Dense(100, activation='softmax')(x)  # For CIFAR-100 classification
+    # -------------------- Output Layer -------------------- #
+    output = layers.Dense(num_classes, activation='softmax', name='output')(x)
 
-    # Define the model
-    model = models.Model(inputs=[predictions_input, hyperparams_input, x_val_input], outputs=output)
+    # -------------------- Model Creation -------------------- #
+    model = models.Model(inputs=[predictions_input, hyperparams_input, images_input], outputs=output)
 
-    # Compile the model
+    # -------------------- Compilation -------------------- #
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(),
+        optimizer=Adam(learning_rate=0.0001),
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy']
     )
@@ -63,8 +89,7 @@ def create_transformer_model():
     """Create a simplified Transformer-based model for CIFAR-100."""
     input_layer = layers.Input(shape=(32, 32, 3))  # CIFAR-100 images
 
-    # Project to a higher-dimensional space
-    x = layers.Dense(64, activation='relu')(input_layer)  # Process each pixel in its 3D format
+    x = layers.Dense(64, activation='relu')(input_layer)  
 
     # Transformer Encoder Layer
     transformer_block = layers.MultiHeadAttention(num_heads=2, key_dim=64)
@@ -84,7 +109,7 @@ def create_transformer_model():
     # Classification Head
     x = layers.Dense(64, activation='relu')(x)
     x = layers.Dropout(0.3)(x)
-    output = layers.Dense(100, activation='softmax')(x)  # CIFAR-100 has 100 classes
+    output = layers.Dense(100, activation='softmax')(x) 
 
     model = models.Model(inputs=input_layer, outputs=output)
     params = {
@@ -206,7 +231,6 @@ def create_lnn_model():
     # Input shape is (32, 32, 3), flatten the spatial dimensions
     input_layer = layers.Input(shape=(32, 32, 3))  # CIFAR-100 images
 
-    # Reshape (32, 32, 3) -> (32, 32*3) to treat each row as a timestep
     x = layers.Reshape((32, 32 * 3))(input_layer)
 
     # RNN Layer
@@ -265,10 +289,10 @@ def create_rnn_model():
     activation = random_choice(['tanh', 'relu'])
     return_sequences = random_choice([False, True])
 
-    # Input shape is (32, 32, 3), flatten the spatial dimensions
-    input_layer = layers.Input(shape=(32, 32, 3))  # CIFAR-100 images
 
-    # Reshape (32, 32, 3) -> (32, 96) to treat each row as a timestep
+    input_layer = layers.Input(shape=(32, 32, 3)) 
+
+
     x = layers.Reshape((32, 32 * 3))(input_layer)
 
     # RNN Layer
@@ -287,7 +311,7 @@ def create_rnn_model():
     # Dense Layers
     x = layers.Dense(random_choice([128, 256]), activation='relu')(x)
     x = layers.Dropout(random_choice([0.3, 0.4, 0.5]))(x)
-    output = layers.Dense(100, activation='softmax')(x)  # CIFAR-100 has 100 classes
+    output = layers.Dense(100, activation='softmax')(x)  
 
     model = models.Model(inputs=input_layer, outputs=output)
     params = {
