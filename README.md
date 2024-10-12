@@ -25,7 +25,7 @@ The architecture of EnsembleNet consists of several components:
    - Generative Adversarial Network (GAN
    
    
-4. **Meta Learner**: The meta-learner leverages a multi-branch approach that integrates sub-model predictions, encoded hyperparamates, and CIFAR-100 image data through seperate pathways to enhance overall classification performance.
+4. **Meta Learner**: The meta-learner leverages a multi-branch approach that integrates sub-model predictions, encoded hyperparamaters, and CIFAR-100 image data through seperate pathways to enhance overall classification performance.
 
 Below is a diagram representing the EnsembleNet pipeline:
 
