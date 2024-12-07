@@ -76,7 +76,6 @@ def create_multibranch_meta_learner(predictions_shape, hyperparams_dim, image_sh
     # -------------------- Model Creation -------------------- #
     model = models.Model(inputs=[predictions_input, hyperparams_input, images_input], outputs=output)
 
-    # -------------------- Compilation -------------------- #
     model.compile(
         optimizer=Adam(learning_rate=0.0001),
         loss='sparse_categorical_crossentropy',
@@ -87,7 +86,7 @@ def create_multibranch_meta_learner(predictions_shape, hyperparams_dim, image_sh
 
 def create_transformer_model():
     """Create a simplified Transformer-based model for CIFAR-100."""
-    input_layer = layers.Input(shape=(32, 32, 3))  # CIFAR-100 images
+    input_layer = layers.Input(shape=(32, 32, 3)) 
 
     x = layers.Dense(64, activation='relu')(input_layer)  
 
@@ -104,7 +103,7 @@ def create_transformer_model():
     x = layers.LayerNormalization()(x)
 
     # Global Average Pooling
-    x = layers.GlobalAveragePooling2D()(x)  # Now use 2D pooling for 3D input
+    x = layers.GlobalAveragePooling2D()(x) 
 
     # Classification Head
     x = layers.Dense(64, activation='relu')(x)
@@ -228,8 +227,7 @@ def create_lnn_model():
     activation = random_choice(['tanh', 'relu'])
     return_sequences = random_choice([False, True])
 
-    # Input shape is (32, 32, 3), flatten the spatial dimensions
-    input_layer = layers.Input(shape=(32, 32, 3))  # CIFAR-100 images
+    input_layer = layers.Input(shape=(32, 32, 3)) 
 
     x = layers.Reshape((32, 32 * 3))(input_layer)
 
@@ -244,7 +242,7 @@ def create_lnn_model():
     # Dense layers
     x = layers.Dense(random_choice([128, 256]), activation='relu')(x)
     x = layers.Dropout(random_choice([0.3, 0.4, 0.5]))(x)
-    output = layers.Dense(100, activation='softmax')(x)  # CIFAR-100 has 100 classes
+    output = layers.Dense(100, activation='softmax')(x) 
 
     model = models.Model(inputs=input_layer, outputs=output)
     params = {
