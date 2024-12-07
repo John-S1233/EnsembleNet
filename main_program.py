@@ -26,13 +26,13 @@ def ensure_dir(directory):
 
 # -------------------- Encoding Setup -------------------- #
 
-# Define possible categories based on your model_creation.py
+# Define possible categories 
 MODEL_TYPES = ["Transformer", "CNN", "DenseNet", "Inception", "MobileNet",
                "LNN", "AttentionCNN", "RNN", "Hybrid", "GAN"]
 
 ACTIVATIONS = ['relu', 'tanh', 'elu', 'leaky_relu']
 
-# Initialize encoders/scalers with updated parameter name
+# Initialize encoders/scalers 
 model_type_encoder = OneHotEncoder(sparse=False, handle_unknown='ignore')
 activation_encoder = OneHotEncoder(sparse=False, handle_unknown='ignore')
 
@@ -40,7 +40,7 @@ activation_encoder = OneHotEncoder(sparse=False, handle_unknown='ignore')
 model_type_encoder.fit(np.array(MODEL_TYPES).reshape(-1, 1))
 activation_encoder.fit(np.array(ACTIVATIONS).reshape(-1, 1))
 
-# Initialize scaler once for numerical features
+# Initialize scaler 
 numerical_scaler = StandardScaler()
 
 def encode_hyperparameters(params, arch_type):
@@ -58,7 +58,7 @@ def encode_hyperparameters(params, arch_type):
         encoded_activation = activation_encoder.transform(np.array([params['activation']]).reshape(-1, 1))
         encoded.append(encoded_activation.flatten())
     
-    # Encode numerical hyperparameters (e.g., number of layers)
+    # Encode numerical hyperparameters
     numerical_features = []
     for key, value in params.items():
         if key not in ['activation'] and isinstance(value, (int, float, list, tuple)):
@@ -100,7 +100,7 @@ def load_and_preprocess_data():
         x_val, y_val, test_size=0.5, random_state=42, stratify=y_val
     )
 
-    # Print unique labels to verify correctness
+    # Print unique labels
     print("Unique y_train labels:", np.unique(y_train))
     print("Unique y_meta_train labels:", np.unique(y_meta_train))
     print("Unique y_meta_val labels:", np.unique(y_meta_val))
@@ -187,7 +187,7 @@ def main():
                 metrics=['accuracy']
             )
     else:
-        # Initialize a new meta-learner with image data
+        # Initialize a new meta-learner
         meta_learner = create_multibranch_meta_learner(predictions_shape, stacked_hyperparams.shape[0], image_shape)
         print("Initialized meta-learner.")
 
@@ -197,7 +197,7 @@ def main():
             metrics=['accuracy']
         )
 
-    # Define ModelCheckpoint callbacks for sub-models
+    # Define callbacks for sub-models
     sub_model_checkpoints = []
     for model_idx in range(num_models):
         checkpoint_path = os.path.join(BASE_SAVE_DIR, f"sub_model_{model_idx+1}.h5")
@@ -224,7 +224,7 @@ def main():
     # Define EarlyStopping callback for meta-learner to prevent overfitting
     early_stopping = EarlyStopping(
         monitor='val_accuracy',
-        patience=25,  # Adjusted patience for earlier stopping
+        patience=25,  
         restore_best_weights=True,
         verbose=1
     )
@@ -301,7 +301,6 @@ def main():
 
         hyperparams_input_test = np.tile(stacked_hyperparams, (stacked_test_preds.shape[0], 1))
 
-        # Make predictions with the meta-learner
         meta_test_preds = meta_learner.predict(
             [stacked_test_preds, hyperparams_input_test, x_test],
             batch_size=batch_size
